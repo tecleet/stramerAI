@@ -27,7 +27,7 @@ class AIBrain {
     }
   }
 
-  async processChat(author, message) {
+  async processChat(author, message, history = "") {
     console.log(`AI Brain processing chat from ${author}: ${message}`);
 
     if (this.openai) {
@@ -36,7 +36,7 @@ class AIBrain {
           model: "gpt-3.5-turbo",
           messages: [
             { role: "system", content: this.systemPrompt },
-            { role: "user", content: `Chat message from ${author}: "${message}"` }
+            { role: "user", content: `Context:\n${history}\n\nChat message from ${author}: "${message}"` }
           ],
         });
 
@@ -53,14 +53,26 @@ class AIBrain {
         }
       } catch (error) {
         console.error("OpenAI Error:", error);
-        return this.mockResponse(author, message);
+        return this.mockResponse(author, message, history);
       }
     } else {
-      return this.mockResponse(author, message);
+      return this.mockResponse(author, message, history);
     }
   }
 
-  mockResponse(author, message) {
+  mockResponse(author, message, history) {
+    const msg = message.toLowerCase();
+
+    if (msg.includes("jump")) {
+        return { text: "Boing! Boing! I love jumping!", emotion: "excited", action: "jump" };
+    }
+    if (msg.includes("dance")) {
+        return { text: "Party time! Let's dance!", emotion: "happy", action: "dance" };
+    }
+    if (msg.includes("wave") || msg.includes("hello") || /\bhi\b/.test(msg)) {
+        return { text: `Hello there, ${author}!`, emotion: "happy", action: "wave" };
+    }
+
     const responses = [
       { text: `Hey ${author}! That's awesome!`, emotion: "happy", action: "jump" },
       { text: `I don't know about that, ${author}...`, emotion: "confused", action: "scratch_head" },
