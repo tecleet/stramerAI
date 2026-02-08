@@ -1,0 +1,22 @@
+{
+  "name": "streamer-ai",
+  "version": "1.0.0",
+  "description": "Real-time AI Character Engine for YouTube Live",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "googleapis": "^126.0.1",
+    "openai": "^4.20.1",
+    "three": "^0.158.0",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

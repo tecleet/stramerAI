@@ -1,0 +1,31 @@
+[INFO] 2026-02-08T18:32:34.092Z: Streamer-AI server running on http://localhost:3000
+[INFO] 2026-02-08T18:32:34.093Z: YouTube Listener started
+[INFO] 2026-02-08T18:32:34.093Z: Idle System started
+[INFO] 2026-02-08T18:32:44.099Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:32:44.100Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:32:44.100Z: TTS Engine processing: "Thinking about digital sheep."
+[INFO] 2026-02-08T18:32:44.101Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:32:44.101Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:32:54.109Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:32:54.109Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:32:54.109Z: TTS Engine processing: "Is anyone there?"
+[INFO] 2026-02-08T18:32:54.110Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:32:54.110Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:32:54.152Z: Frontend client connected
+[INFO] 2026-02-08T18:32:54.170Z: Manually triggering event: CHAT_MESSAGE
+[INFO] 2026-02-08T18:32:54.170Z: AI Brain processing event: CHAT_MESSAGE
+[INFO] 2026-02-08T18:32:54.174Z: TTS Engine processing: "I totally agree with TestUser!"
+[INFO] 2026-02-08T18:32:54.174Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:32:54.175Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:32:54.175Z: Dispatching event: AI_SPAWN_OBJECT
+[INFO] 2026-02-08T18:32:54.184Z: Frontend client disconnected
+[INFO] 2026-02-08T18:33:04.114Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:33:04.114Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:33:04.114Z: TTS Engine processing: "I'm bored..."
+[INFO] 2026-02-08T18:33:04.115Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:33:04.115Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:33:14.125Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:33:14.125Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:33:14.125Z: TTS Engine processing: "Maybe I should do a backflip."
+[INFO] 2026-02-08T18:33:14.125Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:33:14.125Z: Dispatching event: AI_ANIMATION

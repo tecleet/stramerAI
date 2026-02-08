@@ -1,0 +1,22 @@
+[INFO] 2026-02-08T18:28:22.903Z: Streamer-AI server running on http://localhost:3000
+[INFO] 2026-02-08T18:28:22.904Z: YouTube Listener started
+[INFO] 2026-02-08T18:28:22.904Z: Idle System started
+[INFO] 2026-02-08T18:28:32.912Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:28:32.913Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:28:32.913Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:28:32.914Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:28:40.191Z: Frontend client connected
+[INFO] 2026-02-08T18:28:40.208Z: Manually triggering event: CHAT_MESSAGE
+[INFO] 2026-02-08T18:28:40.208Z: AI Brain processing event: CHAT_MESSAGE
+[INFO] 2026-02-08T18:28:40.212Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:28:40.212Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:28:40.213Z: Dispatching event: AI_SPAWN_OBJECT
+[INFO] 2026-02-08T18:28:40.220Z: Frontend client disconnected
+[INFO] 2026-02-08T18:28:42.919Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:28:42.919Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:28:42.920Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:28:42.920Z: Dispatching event: AI_ANIMATION
+[INFO] 2026-02-08T18:28:52.921Z: Idle detected, triggering behavior...
+[INFO] 2026-02-08T18:28:52.921Z: AI Brain processing event: IDLE
+[INFO] 2026-02-08T18:28:52.922Z: Dispatching event: AI_SPEAK
+[INFO] 2026-02-08T18:28:52.922Z: Dispatching event: AI_ANIMATION
