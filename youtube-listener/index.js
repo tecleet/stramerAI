@@ -22,10 +22,10 @@ class YouTubeListener extends EventEmitter {
     const messages = [
       'Hello!',
       'Is this real?',
-      'Make the character jump!',
+      'Can you jump?',
       'Can you say my name?',
       'Wow, 3D text!',
-      'What is your favorite color?',
+      'Time to dance!',
       'Python is better than JS',
       'React is awesome'
     ];

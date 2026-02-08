@@ -62,12 +62,14 @@ youtubeListener.on('chat', async (data) => {
   // 1. Reset Idle
   idleSystem.reset();
 
-  // 2. Add to Memory
+  // 2. Get Context and Add to Memory
+  const history = memorySystem.getRecentContext();
   memorySystem.addMessage(data.author, data.message);
 
   // 3. Process with AI Brain
   // In a real app, you might want to debounce or queue these to avoid spamming the AI
-  const aiResponse = await aiBrain.processChat(data.author, data.message);
+  const aiResponse = await aiBrain.processChat(data.author, data.message, history);
+  console.log('AI Response:', aiResponse);
 
   // 4. Convert to Commands
   const commands = eventEngine.processAIResponse(aiResponse, data.author, data.message);
