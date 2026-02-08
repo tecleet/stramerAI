@@ -71,13 +71,17 @@ youtubeListener.on('chat', async (data) => {
   const aiResponse = await aiBrain.processChat(data.author, data.message, history);
   console.log('AI Response:', aiResponse);
 
-  // 4. Convert to Commands
-  const commands = eventEngine.processAIResponse(aiResponse, data.author, data.message);
+  if (aiResponse) {
+      // 4. Convert to Commands
+      const commands = eventEngine.processAIResponse(aiResponse, data.author, data.message);
 
-  // 5. Broadcast commands
-  commands.forEach(cmd => {
-      broadcast({ type: 'ai-command', command: cmd });
-  });
+      // 5. Broadcast commands
+      commands.forEach(cmd => {
+          broadcast({ type: 'ai-command', command: cmd });
+      });
+  } else {
+      console.log("AI Response was null (likely error or quota exceeded), skipping commands.");
+  }
 
   // Also send the raw chat for display if needed
   broadcast({ type: 'chat', data });
