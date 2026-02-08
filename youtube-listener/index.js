@@ -30,12 +30,11 @@ class YouTubeListener extends EventEmitter {
             this.pollChat();
         } catch (error) {
             console.error('YouTube Listener: Failed to connect to live chat:', error.message);
-            console.log('YouTube Listener: Falling back to Mock Mode.');
-            this.startSimulation();
+            // Mock mode disabled for production
         }
     } else {
-        console.log('YouTube Listener: Missing API Key or Video ID. Using Mock Mode.');
-        this.startSimulation();
+        console.log('YouTube Listener: Missing API Key or Video ID.');
+        // Mock mode disabled for production
     }
   }
 
@@ -99,40 +98,6 @@ class YouTubeListener extends EventEmitter {
       setTimeout(() => this.pollChat(), this.pollingInterval);
   }
 
-  startSimulation() {
-    console.log('YouTube Listener: Starting simulation...');
-    const users = ['Viewer1', 'FanBoy99', 'CoolCat', 'DevGuru', 'StreamLover'];
-    const messages = [
-      'Hello!',
-      'Is this real?',
-      'Can you jump?',
-      'Can you say my name?',
-      'Wow, 3D text!',
-      'Time to dance!',
-      'Python is better than JS',
-      'React is awesome'
-    ];
-
-    setInterval(() => {
-      const randomUser = users[Math.floor(Math.random() * users.length)];
-      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-
-      this.emit('chat', {
-        author: randomUser,
-        message: randomMsg,
-        timestamp: new Date().toISOString()
-      });
-    }, 10000); // Emit a message every 10 seconds
-
-    // Simulate subscription every 30 seconds
-    setInterval(() => {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        this.emit('subscription', {
-            subscriber: randomUser,
-            timestamp: new Date().toISOString()
-        });
-    }, 30000);
-  }
 }
 
 module.exports = new YouTubeListener();

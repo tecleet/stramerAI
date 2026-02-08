@@ -23,7 +23,7 @@ class AIBrain {
       });
       this.openai = new OpenAIApi(configuration);
     } else {
-      console.log("AI Brain: No OpenAI API Key found. Using Mock Mode.");
+      console.log("AI Brain: No OpenAI API Key found.");
     }
   }
 
@@ -53,34 +53,12 @@ class AIBrain {
         }
       } catch (error) {
         console.error("OpenAI Error:", error);
-        return this.mockResponse(author, message, history);
+        return null; // Disable mock fallback
       }
     } else {
-      return this.mockResponse(author, message, history);
+      console.log("AI Brain: OpenAI not initialized.");
+      return null; // Disable mock fallback
     }
-  }
-
-  mockResponse(author, message, history) {
-    const msg = message.toLowerCase();
-
-    if (msg.includes("jump")) {
-        return { text: "Boing! Boing! I love jumping!", emotion: "excited", action: "jump" };
-    }
-    if (msg.includes("dance")) {
-        return { text: "Party time! Let's dance!", emotion: "happy", action: "dance" };
-    }
-    if (msg.includes("wave") || msg.includes("hello") || /\bhi\b/.test(msg)) {
-        return { text: `Hello there, ${author}!`, emotion: "happy", action: "wave" };
-    }
-
-    const responses = [
-      { text: `Hey ${author}! That's awesome!`, emotion: "happy", action: "jump" },
-      { text: `I don't know about that, ${author}...`, emotion: "confused", action: "scratch_head" },
-      { text: `Omg ${author}, you are hilarious!`, emotion: "happy", action: "laugh" },
-      { text: `Boring! Next!`, emotion: "bored", action: "yawn" },
-      { text: `Did you just say that?`, emotion: "surprised", action: "shock" }
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
   }
 }
 

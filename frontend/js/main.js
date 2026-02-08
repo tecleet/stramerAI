@@ -103,20 +103,39 @@ function executeCommand(command) {
 function speak(text, emotion) {
     // Basic Web Speech API implementation
     if ('speechSynthesis' in window) {
+        // Cancel any ongoing speech to prevent overlap
+        window.speechSynthesis.cancel();
+
         const utterance = new SpeechSynthesisUtterance(text);
-        // Simple voice selection logic
+
+        // Improve voice selection logic
         const voices = window.speechSynthesis.getVoices();
-        // Try to find a female voice or specific one
-        const voice = voices.find(v => v.name.includes('Google US English')) || voices[0];
+        // Prioritize natural sounding voices
+        const voice = voices.find(v => v.name.includes('Google US English')) ||
+                      voices.find(v => v.name.includes('Microsoft Zira')) ||
+                      voices.find(v => v.name.includes('Samantha')) || // macOS default
+                      voices.find(v => v.lang.startsWith('en-US')) ||
+                      voices[0];
+
         if (voice) utterance.voice = voice;
 
-        // Adjust pitch/rate based on emotion (simple mapping)
+        // Adjust pitch/rate based on emotion (refined mapping)
+        // Default values
+        utterance.pitch = 1.0;
+        utterance.rate = 1.0;
+
         if (emotion === 'excited' || emotion === 'happy') {
-            utterance.pitch = 1.2;
-            utterance.rate = 1.1;
+            utterance.pitch = 1.1; // Slightly higher
+            utterance.rate = 1.1;  // Slightly faster
         } else if (emotion === 'bored') {
-            utterance.pitch = 0.8;
-            utterance.rate = 0.9;
+            utterance.pitch = 0.9; // Slightly lower
+            utterance.rate = 0.9;  // Slightly slower
+        } else if (emotion === 'angry') {
+            utterance.pitch = 0.9; // Deeper
+            utterance.rate = 1.2;  // Faster/Aggressive
+        } else if (emotion === 'surprised') {
+            utterance.pitch = 1.2; // High
+            utterance.rate = 1.1;
         }
 
         window.speechSynthesis.speak(utterance);
