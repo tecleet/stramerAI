@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streamer-AI Live</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; color: white; font-family: sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui-layer { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+        .status { background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; }
+        #start-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        #start-btn {
+            padding: 20px 40px; font-size: 24px; cursor: pointer; background: #00ff00; border: none; border-radius: 8px;
+        }
+    </style>
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="ui-layer">
+        <div id="status" class="status">Waiting to Start...</div>
+    </div>
+
+    <div id="start-overlay">
+        <button id="start-btn">START ENGINE</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

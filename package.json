@@ -1,0 +1,27 @@
+{
+  "name": "streamer-ai",
+  "version": "1.0.0",
+  "description": "Real-time AI Character Engine for YouTube Live",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "streamer",
+    "youtube",
+    "threejs",
+    "nodejs"
+  ],
+  "author": "Jules",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "ws": "^8.13.0",
+    "openai": "^3.2.1",
+    "googleapis": "^118.0.0",
+    "three": "^0.152.2"
+  }
+}
