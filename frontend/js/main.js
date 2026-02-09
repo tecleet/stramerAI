@@ -125,6 +125,16 @@ function executeCommand(command) {
 
         case 'animation':
             character.playAnimation(command.name, command.duration);
+            if (command.name === 'eat') {
+                const textToEat = textSystem.getClosestText(character.headGroup.position);
+                if (textToEat) {
+                    // Start eating effect
+                    // In a real physics engine we'd move it to the mouth
+                    // Here we can just shrink it faster
+                    textToEat.life = 0.5;
+                    textToEat.scaleMax = 0; // shrink
+                }
+            }
             break;
     }
 }
