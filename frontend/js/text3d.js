@@ -19,14 +19,17 @@ export class Text3DSystem {
     createFloatingText(text, author, style) {
         if (!this.font) return;
 
-        const geometry = new TextGeometry(`${author}: ${text}`, {
+        // Truncate if too long
+        const displayText = `${author}: ${text}`;
+
+        const geometry = new TextGeometry(displayText, {
             font: this.font,
-            size: 0.5,
+            size: 0.4,
             height: 0.1,
             curveSegments: 12,
             bevelEnabled: true,
-            bevelThickness: 0.03,
-            bevelSize: 0.02,
+            bevelThickness: 0.02,
+            bevelSize: 0.01,
             bevelOffset: 0,
             bevelSegments: 5
         });
@@ -34,37 +37,87 @@ export class Text3DSystem {
         geometry.center();
 
         let color = 0xffffff;
-        if (style === 'angry') color = 0xff0000;
-        if (style === 'happy') color = 0xffff00;
-        if (style === 'sad') color = 0x0000ff;
+        let emissive = 0x222222;
+        let scaleMax = 1.0;
 
-        const material = new THREE.MeshStandardMaterial({ color: color });
+        if (style === 'angry') { color = 0xff3333; emissive = 0x550000; }
+        if (style === 'happy') { color = 0xffff33; emissive = 0x555500; }
+        if (style === 'sad') { color = 0x3333ff; emissive = 0x000055; }
+        if (style === 'excited') { color = 0xff00ff; emissive = 0x550055; scaleMax = 1.2; }
+
+        // Special styles detection
+        if (text.includes("SUPER CHAT")) {
+            color = 0xffd700; // Gold
+            emissive = 0xffaa00;
+            scaleMax = 1.5;
+        } else if (text.includes("SUBSCRIBED")) {
+            color = 0x00ff00;
+            emissive = 0x005500;
+            scaleMax = 1.3;
+        }
+
+        const material = new THREE.MeshPhysicalMaterial({
+            color: color,
+            emissive: emissive,
+            metalness: 0.5,
+            roughness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
+        });
+
         const mesh = new THREE.Mesh(geometry, material);
 
         // Random starting position around the character
+        // x: -2.5 to 2.5, y: 1.5, z: 1.5 to 3.5
         mesh.position.set(
             (Math.random() - 0.5) * 5,
-            2,
+            1.5 + Math.random(),
             (Math.random() - 0.5) * 2 + 2
         );
 
+        // Initial scale 0 for pop-in
+        mesh.scale.set(0, 0, 0);
+
         this.scene.add(mesh);
-        this.floatingTexts.push({ mesh, life: 5.0, velocity: new THREE.Vector3(0, 1, 0) });
+        this.floatingTexts.push({
+            mesh,
+            life: 6.0,
+            age: 0,
+            scaleMax: scaleMax,
+            velocity: new THREE.Vector3((Math.random() - 0.5) * 0.5, 0.5 + Math.random() * 0.5, 0),
+            wobblePhase: Math.random() * Math.PI * 2
+        });
     }
 
     update(delta) {
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const item = this.floatingTexts[i];
             item.life -= delta;
+            item.age += delta;
 
-            // Float up
-            item.mesh.position.y += delta * 0.5;
-            item.mesh.rotation.y += delta * 0.5;
-
-            // Fade out (using scale for simplicity as materials are tricky with transparency on standard)
-            if (item.life < 1.0) {
-                item.mesh.scale.setScalar(item.life);
+            // 1. Pop-in Animation (Elastic/Overshoot effect)
+            if (item.age < 0.5) {
+                const t = item.age / 0.5;
+                // Elastic ease out
+                const scale = item.scaleMax * (Math.sin(-13 * (t + 1) * Math.PI / 2) * Math.pow(2, -10 * t) + 1);
+                item.mesh.scale.setScalar(scale);
+            } else if (item.life < 1.0) {
+                // Fade out scale
+                item.mesh.scale.setScalar(item.scaleMax * item.life);
+            } else {
+                item.mesh.scale.setScalar(item.scaleMax);
             }
+
+            // 2. Physics / Float
+            item.mesh.position.add(item.velocity.clone().multiplyScalar(delta));
+            // Slow down vertical velocity (drag)
+            item.velocity.y *= 0.98;
+            // Add slight drift
+            item.velocity.x += (Math.sin(item.age + item.wobblePhase) * 0.5) * delta;
+
+            // 3. Wobble Rotation
+            item.mesh.rotation.y = Math.sin(item.age * 2 + item.wobblePhase) * 0.2;
+            item.mesh.rotation.z = Math.cos(item.age * 1.5 + item.wobblePhase) * 0.1;
 
             if (item.life <= 0) {
                 this.scene.remove(item.mesh);
