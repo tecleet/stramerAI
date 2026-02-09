@@ -10,7 +10,23 @@ let world, character, textSystem;
 let ws;
 let isStarted = false;
 
+// Connect WebSocket immediately to get settings
+connectWebSocket();
+
 document.getElementById('start-btn').addEventListener('click', () => {
+    // Get values from UI
+    const videoId = document.getElementById('video-id').value;
+    const mockMode = document.getElementById('mock-mode').checked;
+
+    // Send updated settings to backend
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'update-settings',
+            videoId: videoId,
+            mockMode: mockMode
+        }));
+    }
+
     document.getElementById('start-overlay').style.display = 'none';
     isStarted = true;
     init();
@@ -30,9 +46,6 @@ function init() {
 
     // Start Loop
     animate();
-
-    // Connect WebSocket
-    connectWebSocket();
 }
 
 function connectWebSocket() {
@@ -66,6 +79,18 @@ function handleServerMessage(message) {
     console.log("Server Message:", message);
 
     switch (message.type) {
+        case 'settings':
+            // Update UI with received settings
+            if (message.data) {
+                if (document.getElementById('video-id')) {
+                    document.getElementById('video-id').value = message.data.videoId || '';
+                }
+                if (document.getElementById('mock-mode')) {
+                    document.getElementById('mock-mode').checked = message.data.mockMode || false;
+                }
+            }
+            break;
+
         case 'chat':
             // Raw chat message (before AI processing - maybe show raw chat?)
             // For now, let's wait for processed commands.
@@ -73,11 +98,15 @@ function handleServerMessage(message) {
 
         case 'ai-command':
             // Processed AI command from EventEngine
-            executeCommand(message.command);
+            if (isStarted) {
+                executeCommand(message.command);
+            }
             break;
 
         case 'status':
             console.log("Status update:", message.message);
+            const statusEl = document.getElementById('status');
+            if (statusEl) statusEl.innerText = message.message;
             break;
     }
 }
