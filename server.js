@@ -2,11 +2,39 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const youtubeListener = require('./youtube-listener');
 const aiBrain = require('./ai-brain');
 const eventEngine = require('./event-engine');
 const memorySystem = require('./memory-system');
 const idleSystem = require('./idle-system');
+require('dotenv').config();
+
+// Configuration
+const CONFIG_FILE = 'config.json';
+let config = {
+    videoId: process.env.YOUTUBE_VIDEO_ID || '',
+    mockMode: false
+};
+
+// Load Config
+if (fs.existsSync(CONFIG_FILE)) {
+    try {
+        const savedConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+        config = { ...config, ...savedConfig };
+        console.log('Loaded config:', config);
+    } catch (e) {
+        console.error('Error loading config:', e);
+    }
+}
+
+function saveConfig() {
+    try {
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    } catch (e) {
+        console.error('Error saving config:', e);
+    }
+}
 
 // Initialize Express
 const app = express();
@@ -20,8 +48,29 @@ app.use(express.static(path.join(__dirname, 'frontend')));
 wss.on('connection', (ws) => {
   console.log('Client connected');
 
+  // Send current settings
+  ws.send(JSON.stringify({ type: 'settings', data: config }));
+
   ws.on('message', (message) => {
-    console.log('Received:', message);
+    try {
+        const data = JSON.parse(message);
+        console.log('Received:', data);
+
+        if (data.type === 'update-settings') {
+            config.videoId = data.videoId;
+            config.mockMode = data.mockMode;
+            saveConfig();
+
+            // Restart Listener
+            youtubeListener.start(config.videoId, config.mockMode);
+
+            broadcast({ type: 'status', message: 'Settings updated & Listener restarted' });
+            // Broadcast new settings to all clients
+            broadcast({ type: 'settings', data: config });
+        }
+    } catch (e) {
+        console.error("Error processing message:", e);
+    }
   });
 
   ws.send(JSON.stringify({ type: 'status', message: 'Connected to Streamer-AI Backend' }));
@@ -40,8 +89,6 @@ function broadcast(data) {
 idleSystem.start();
 idleSystem.on('idle', (data) => {
     console.log('Idle Event:', data);
-    // Create an idle command directly or process via AI?
-    // Let's create a simple command for now.
     const commands = [
         { type: 'tts', text: data.text, emotion: 'bored' },
         { type: 'animation', name: data.action, duration: 3000 }
@@ -52,34 +99,27 @@ idleSystem.on('idle', (data) => {
     });
 });
 
-// Connect YouTube Listener
-youtubeListener.connect();
+// Start YouTube Listener with initial config
+youtubeListener.start(config.videoId, config.mockMode);
 
 // Listen to YouTube events
 youtubeListener.on('chat', async (data) => {
   console.log('New Chat Message:', data);
 
-  // 1. Reset Idle
   idleSystem.reset();
-
-  // 2. Get Context and Add to Memory
   const history = memorySystem.getRecentContext();
   memorySystem.addMessage(data.author, data.message);
 
-  // 3. Process with AI Brain
-  // In a real app, you might want to debounce or queue these to avoid spamming the AI
   const aiResponse = await aiBrain.processChat(data.author, data.message, history);
   console.log('AI Response:', aiResponse);
 
-  // 4. Convert to Commands
+  // aiBrain.processChat now guarantees a response object (even if it's a fallback)
   const commands = eventEngine.processAIResponse(aiResponse, data.author, data.message);
 
-  // 5. Broadcast commands
   commands.forEach(cmd => {
       broadcast({ type: 'ai-command', command: cmd });
   });
 
-  // Also send the raw chat for display if needed
   broadcast({ type: 'chat', data });
 });
 
@@ -89,7 +129,6 @@ youtubeListener.on('subscription', async (data) => {
   idleSystem.reset();
   memorySystem.addSubscriber(data.subscriber);
 
-  // Generate special welcome
   const aiResponse = {
       text: `Welcome to the stream, ${data.subscriber}! You are awesome!`,
       emotion: 'excited',
@@ -104,6 +143,44 @@ youtubeListener.on('subscription', async (data) => {
 
   broadcast({ type: 'subscription', data });
 });
+
+youtubeListener.on('superchat', async (data) => {
+    console.log('New Super Chat:', data);
+
+    idleSystem.reset();
+    memorySystem.addMessage(data.author, `SUPER CHAT: ${data.message} (${data.amount})`);
+
+    try {
+        const history = memorySystem.getRecentContext();
+        const prompt = `[SUPER CHAT from ${data.author} for ${data.amount}]: ${data.message}`;
+
+        const generatedResponse = await aiBrain.processChat(data.author, prompt, history);
+
+        if (generatedResponse) {
+            const commands = eventEngine.processAIResponse(generatedResponse, data.author, `SUPER CHAT: ${data.message}`);
+            commands.forEach(cmd => {
+                broadcast({ type: 'ai-command', command: cmd });
+            });
+        } else {
+            throw new Error("AI Brain returned null");
+        }
+
+    } catch (e) {
+        console.error("Error processing super chat AI:", e);
+        // Fallback
+        const aiResponse = {
+            text: `WOW! ${data.author}, thank you so much for the ${data.amount}! You are incredible!`,
+            emotion: 'excited',
+            action: 'jump'
+        };
+        const commands = eventEngine.processAIResponse(aiResponse, data.author, `SUPER CHAT: ${data.message}`);
+        commands.forEach(cmd => {
+            broadcast({ type: 'ai-command', command: cmd });
+        });
+    }
+
+    broadcast({ type: 'superchat', data });
+  });
 
 // Start server
 const PORT = process.env.PORT || 3000;

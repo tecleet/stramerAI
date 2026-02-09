@@ -3,72 +3,82 @@ import * as THREE from 'three';
 export class Character {
     constructor(scene) {
         this.scene = scene;
+        this.group = new THREE.Group();
         this.isTalking = false;
         this.talkTimer = 0;
+
+        // Animation State
         this.currentAnimation = null;
         this.animationTimer = 0;
-        this.initialPos = new THREE.Vector3(0, 0, 0);
+        this.animationTotalDuration = 0;
 
-        // Body parts
-        this.group = new THREE.Group();
+        // Body Parts Ref
+        this.headGroup = null;
+        this.torso = null;
+        this.leftArm = null;
+        this.rightArm = null;
+
         this.createBody();
         this.scene.add(this.group);
     }
 
     createBody() {
-        // Materials
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3366cc, roughness: 0.3 });
-        const jointMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-        const faceMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00 });
+        const material = new THREE.MeshStandardMaterial({ color: 0x3366cc, roughness: 0.3 });
+        const jointMat = new THREE.MeshStandardMaterial({ color: 0x222 });
 
         // Torso
-        this.torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.6), bodyMat);
+        this.torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.6), material);
         this.torso.position.y = 2.25;
-        this.torso.castShadow = true;
         this.group.add(this.torso);
 
-        // Head
+        // Head Group
         this.headGroup = new THREE.Group();
-        this.head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), bodyMat);
-        this.head.castShadow = true;
-        this.headGroup.add(this.head);
+        this.headGroup.position.set(0, 3.1, 0);
+
+        const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
+        this.headGroup.add(headMesh);
 
         // Eyes
-        const leftEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.1), eyeMat);
+        const eyeGeo = new THREE.BoxGeometry(0.2, 0.1, 0.1);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
         leftEye.position.set(-0.2, 0.1, 0.41);
         this.headGroup.add(leftEye);
 
-        const rightEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.1), eyeMat);
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
         rightEye.position.set(0.2, 0.1, 0.41);
         this.headGroup.add(rightEye);
 
-        this.headGroup.position.set(0, 3.1, 0);
+        // Mouth (for eating animation)
+        const mouthGeo = new THREE.BoxGeometry(0.4, 0.05, 0.05);
+        const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        this.mouth = new THREE.Mesh(mouthGeo, mouthMat);
+        this.mouth.position.set(0, -0.2, 0.41);
+        this.headGroup.add(this.mouth);
+
         this.group.add(this.headGroup);
 
-        // Arms
-        this.leftArm = this.createLimb(bodyMat, jointMat, -0.8, 2.8, 0);
-        this.rightArm = this.createLimb(bodyMat, jointMat, 0.8, 2.8, 0);
+        // Limbs Helper
+        const createLimb = (x, y, isLeg) => {
+            const group = new THREE.Group();
+            group.position.set(x, y, 0);
 
-        // Legs
-        this.leftLeg = this.createLimb(bodyMat, jointMat, -0.3, 1.5, 0, true);
-        this.rightLeg = this.createLimb(bodyMat, jointMat, 0.3, 1.5, 0, true);
-    }
+            const joint = new THREE.Mesh(new THREE.SphereGeometry(0.2), jointMat);
+            group.add(joint);
 
-    createLimb(material, jointMat, x, y, z, isLeg = false) {
-        const limbGroup = new THREE.Group();
-        limbGroup.position.set(x, y, z);
+            const limb = new THREE.Mesh(new THREE.BoxGeometry(0.3, isLeg ? 1.5 : 1.2, 0.3), material);
+            limb.position.y = isLeg ? -0.75 : -0.6;
+            group.add(limb);
 
-        const joint = new THREE.Mesh(new THREE.SphereGeometry(0.2), jointMat);
-        limbGroup.add(joint);
+            this.group.add(group);
+            return group;
+        };
 
-        const limb = new THREE.Mesh(new THREE.BoxGeometry(0.3, isLeg ? 1.5 : 1.2, 0.3), material);
-        limb.position.y = isLeg ? -0.75 : -0.6;
-        limb.castShadow = true;
-        limbGroup.add(limb);
-
-        this.group.add(limbGroup);
-        return limbGroup;
+        this.leftArm = createLimb(-0.8, 2.8, false);
+        this.rightArm = createLimb(0.8, 2.8, false);
+        this.leftLeg = createLimb(-0.3, 1.5, true);
+        this.rightLeg = createLimb(0.3, 1.5, true);
     }
 
     playAnimation(name, duration = 2000) {
@@ -83,49 +93,65 @@ export class Character {
         this.talkTimer = duration / 1000;
     }
 
-    update(delta) {
-        // Idle Animation (breathing)
-        this.torso.position.y = 2.25 + Math.sin(Date.now() * 0.002) * 0.05;
-        this.headGroup.position.y = 3.1 + Math.sin(Date.now() * 0.002) * 0.05;
+    // New method for "eating" text
+    eatAnimation(progress) {
+        // Open mouth wider
+        const mouthOpen = Math.sin(progress * Math.PI * 4) * 0.2 + 0.2;
+        this.mouth.scale.y = mouthOpen * 5;
 
-        // Talking Animation (Head bobbing)
+        // Lean forward
+        this.torso.rotation.x = Math.sin(progress * Math.PI) * 0.2;
+        this.headGroup.rotation.x = Math.sin(progress * Math.PI) * 0.1;
+
+        // Chomping motion
+        if (progress > 0.4 && progress < 0.6) {
+             this.headGroup.position.z = 0.5; // lunging forward
+        } else {
+             this.headGroup.position.z = 0;
+        }
+    }
+
+    update(delta) {
+        // Idle Float
+        this.group.position.y = Math.sin(Date.now() * 0.001) * 0.1;
+
         if (this.isTalking) {
-            this.headGroup.rotation.x = Math.sin(Date.now() * 0.02) * 0.1;
             this.talkTimer -= delta;
+            // Mouth flap
+            this.mouth.scale.y = 1 + Math.sin(Date.now() * 0.02) * 2;
             if (this.talkTimer <= 0) {
                 this.isTalking = false;
-                this.headGroup.rotation.x = 0;
+                this.mouth.scale.y = 1;
             }
         }
 
-        // Action Animations
         if (this.currentAnimation) {
             this.animationTimer -= delta;
+            if (this.animationTimer < 0) this.animationTimer = 0; // clamp
+
             const progress = 1 - (this.animationTimer / this.animationTotalDuration);
 
             if (this.currentAnimation === 'jump') {
-                // Parabolic jump
-                const jumpHeight = 2;
-                const jumpProgress = Math.sin(progress * Math.PI);
-                this.group.position.y = jumpProgress * jumpHeight;
+                this.group.position.y = Math.sin(progress * Math.PI) * 2;
             } else if (this.currentAnimation === 'wave') {
-                // Wave right arm
-                this.rightArm.rotation.z = Math.PI - Math.sin(progress * Math.PI * 4) * 0.5;
-            } else if (this.currentAnimation === 'spin') {
-                this.group.rotation.y = progress * Math.PI * 2;
+                this.rightArm.rotation.z = Math.PI - Math.sin(progress * Math.PI * 4);
+            } else if (this.currentAnimation === 'dance') {
+                this.group.rotation.y = Math.sin(progress * Math.PI * 4);
+                this.leftArm.rotation.z = Math.sin(progress * Math.PI * 8);
+                this.rightArm.rotation.z = -Math.sin(progress * Math.PI * 8);
+            } else if (this.currentAnimation === 'eat') {
+                this.eatAnimation(progress);
             }
 
             if (this.animationTimer <= 0) {
                 this.currentAnimation = null;
                 // Reset Pose
-                this.group.position.y = 0;
-                this.rightArm.rotation.z = 0;
-                this.group.rotation.y = 0;
+                this.group.rotation.set(0, 0, 0);
+                this.rightArm.rotation.set(0, 0, 0);
+                this.leftArm.rotation.set(0, 0, 0);
+                this.headGroup.position.z = 0;
+                this.mouth.scale.y = 1;
             }
-        } else {
-            // Default arm swing
-            this.leftArm.rotation.x = Math.sin(Date.now() * 0.002) * 0.1;
-            this.rightArm.rotation.x = -Math.sin(Date.now() * 0.002) * 0.1;
         }
     }
 }

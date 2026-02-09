@@ -20,14 +20,18 @@ class EventEngine {
       type: 'text3d',
       content: originalMessage,
       author: author,
-      style: aiData.emotion // color/font based on emotion?
+      style: aiData.emotion
     });
 
     // 3. Animation command
+    let duration = 2000;
+    if (aiData.action === 'dance') duration = 5000;
+    if (aiData.action === 'eat') duration = 3000;
+
     commands.push({
       type: 'animation',
       name: aiData.action,
-      duration: 2000 // duration in ms
+      duration: duration
     });
 
     return commands;

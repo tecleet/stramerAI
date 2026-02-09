@@ -6,36 +6,61 @@ class YouTubeListener extends EventEmitter {
   constructor() {
     super();
     this.isConnected = false;
+    this.isMock = false;
     this.youtube = null;
     this.liveChatId = null;
     this.nextPageToken = null;
-    this.pollingInterval = 5000;
+    this.pollingInterval = 10000; // Increased initial default
     this.startTime = Date.now();
+    this.timeoutId = null;
   }
 
-  async connect() {
-    console.log('YouTube Listener: Connecting...');
+  async start(videoId, isMock = false) {
+    this.stop(); // Ensure clean state
+    console.log(`YouTube Listener: Starting... (Mock: ${isMock})`);
     this.startTime = Date.now();
+    this.isMock = isMock;
+    this.isConnected = false;
 
-    if (process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_VIDEO_ID) {
+    if (this.isMock) {
+        this.isConnected = true;
+        this.pollMock();
+        return;
+    }
+
+    // Real Mode
+    if (process.env.YOUTUBE_API_KEY && videoId) {
         this.youtube = google.youtube({
             version: 'v3',
             auth: process.env.YOUTUBE_API_KEY
         });
 
         try {
-            await this.getLiveChatId(process.env.YOUTUBE_VIDEO_ID);
+            await this.getLiveChatId(videoId);
             console.log(`YouTube Listener: Connected to Live Chat ID: ${this.liveChatId}`);
             this.isConnected = true;
             this.pollChat();
         } catch (error) {
             console.error('YouTube Listener: Failed to connect to live chat:', error.message);
-            // Mock mode disabled for production
+            console.log('YouTube Listener: Falling back to Mock Mode due to error.');
+            this.isMock = true;
+            this.isConnected = true;
+            this.pollMock();
         }
     } else {
-        console.log('YouTube Listener: Missing API Key or Video ID.');
-        // Mock mode disabled for production
+        console.log('YouTube Listener: Missing API Key or Video ID. Starting Mock Mode.');
+        this.isMock = true;
+        this.isConnected = true;
+        this.pollMock();
     }
+  }
+
+  stop() {
+      this.isConnected = false;
+      if (this.timeoutId) {
+          clearTimeout(this.timeoutId);
+          this.timeoutId = null;
+      }
   }
 
   async getLiveChatId(videoId) {
@@ -57,7 +82,7 @@ class YouTubeListener extends EventEmitter {
   }
 
   async pollChat() {
-      if (!this.isConnected) return;
+      if (!this.isConnected || this.isMock) return;
 
       try {
           const response = await this.youtube.liveChatMessages.list({
@@ -68,36 +93,84 @@ class YouTubeListener extends EventEmitter {
 
           this.nextPageToken = response.data.nextPageToken;
 
-          // Use polling interval from API or default to 5s
-          this.pollingInterval = response.data.pollingIntervalMillis || 5000;
+          // Ensure we respect the API's requested interval, but don't go below 5s to be safe
+          const apiInterval = response.data.pollingIntervalMillis || 10000;
+          this.pollingInterval = Math.max(apiInterval, 10000);
 
           const messages = response.data.items;
           messages.forEach(msg => {
               const publishedAt = new Date(msg.snippet.publishedAt).getTime();
-              // Only process messages that arrived after we connected to avoid flooding history
               if (publishedAt < this.startTime) return;
 
               const author = msg.authorDetails.displayName;
-              const message = msg.snippet.displayMessage;
+              const displayMessage = msg.snippet.displayMessage;
               const timestamp = msg.snippet.publishedAt;
+              const type = msg.snippet.type;
 
-              // Emit chat event
-              this.emit('chat', {
-                  author: author,
-                  message: message,
-                  timestamp: timestamp
-              });
+              if (type === 'superChatEvent') {
+                  this.emit('superchat', {
+                      author: author,
+                      message: displayMessage,
+                      amount: msg.snippet.superChatDetails.amountDisplayString,
+                      timestamp: timestamp
+                  });
+              } else if (type === 'newSponsorEvent') { // Subscription
+                  this.emit('subscription', {
+                      subscriber: author,
+                      timestamp: timestamp
+                  });
+              } else {
+                  // Default to chat
+                  this.emit('chat', {
+                      author: author,
+                      message: displayMessage,
+                      timestamp: timestamp
+                  });
+              }
           });
 
       } catch (error) {
           console.error('YouTube Listener: Error polling chat:', error.message);
-          // If 403 or similar, maybe stop polling or retry with backoff
-          // For now, we continue but maybe increase interval?
+          // Increase backoff on error
+          this.pollingInterval = Math.min(this.pollingInterval * 2, 60000);
       }
 
-      setTimeout(() => this.pollChat(), this.pollingInterval);
+      console.log(`YouTube Listener: Polling again in ${this.pollingInterval}ms`);
+      this.timeoutId = setTimeout(() => this.pollChat(), this.pollingInterval);
   }
 
+  pollMock() {
+      if (!this.isConnected || !this.isMock) return;
+
+      // Random event generation
+      const rand = Math.random();
+
+      if (rand < 0.05) { // 5% chance of subscription
+          this.emit('subscription', {
+              subscriber: `MockSub_${Math.floor(Math.random() * 1000)}`,
+              timestamp: new Date().toISOString()
+          });
+      } else if (rand < 0.1) { // 5% chance of super chat
+          this.emit('superchat', {
+              author: `MockSuperFan_${Math.floor(Math.random() * 100)}`,
+              message: "Keep up the great work!",
+              amount: "$10.00",
+              timestamp: new Date().toISOString()
+          });
+      } else { // 90% chance of chat
+          const messages = ["Hello!", "Cool stream!", "Is this AI?", "Make it dance!", "Wow!", "Nice graphics"];
+          const msg = messages[Math.floor(Math.random() * messages.length)];
+           this.emit('chat', {
+              author: `User_${Math.floor(Math.random() * 100)}`,
+              message: msg,
+              timestamp: new Date().toISOString()
+          });
+      }
+
+      // Random interval between 2s and 10s
+      const interval = Math.floor(Math.random() * 8000) + 2000;
+      this.timeoutId = setTimeout(() => this.pollMock(), interval);
+  }
 }
 
 module.exports = new YouTubeListener();
