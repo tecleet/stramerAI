@@ -39,6 +39,8 @@ export class Text3DSystem {
         let color = 0xffffff;
         let emissive = 0x222222;
         let scaleMax = 1.0;
+        let isSticky = false;
+        let life = 6.0;
 
         if (style === 'angry') { color = 0xff3333; emissive = 0x550000; }
         if (style === 'happy') { color = 0xffff33; emissive = 0x555500; }
@@ -54,6 +56,8 @@ export class Text3DSystem {
             color = 0x00ff00;
             emissive = 0x005500;
             scaleMax = 1.3;
+            isSticky = true;
+            life = 60.0; // Stay for a minute
         }
 
         const material = new THREE.MeshPhysicalMaterial({
@@ -67,13 +71,23 @@ export class Text3DSystem {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        // Random starting position around the character
-        // x: -2.5 to 2.5, y: 1.5, z: 1.5 to 3.5
-        mesh.position.set(
+        // Position logic
+        let position = new THREE.Vector3(
             (Math.random() - 0.5) * 5,
             1.5 + Math.random(),
             (Math.random() - 0.5) * 2 + 2
         );
+
+        if (isSticky) {
+             // Position on "wall" behind
+             position.set(
+                (Math.random() - 0.5) * 10,
+                Math.random() * 5 + 1,
+                -5 // Background wall z-depth
+             );
+        }
+
+        mesh.position.copy(position);
 
         // Initial scale 0 for pop-in
         mesh.scale.set(0, 0, 0);
@@ -81,12 +95,39 @@ export class Text3DSystem {
         this.scene.add(mesh);
         this.floatingTexts.push({
             mesh,
-            life: 6.0,
+            life: life,
             age: 0,
             scaleMax: scaleMax,
             velocity: new THREE.Vector3((Math.random() - 0.5) * 0.5, 0.5 + Math.random() * 0.5, 0),
-            wobblePhase: Math.random() * Math.PI * 2
+            wobblePhase: Math.random() * Math.PI * 2,
+            isSticky: isSticky
         });
+    }
+
+    // New method to find closest text for eating
+    getClosestText(position) {
+        let closest = null;
+        let minDist = 3.0; // Interaction range
+
+        this.floatingTexts.forEach(item => {
+            if (item.isSticky) return; // Don't eat subscribers on the wall
+            const dist = item.mesh.position.distanceTo(position);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = item;
+            }
+        });
+        return closest;
+    }
+
+    removeText(item) {
+        const index = this.floatingTexts.indexOf(item);
+        if (index > -1) {
+            this.scene.remove(item.mesh);
+            item.mesh.geometry.dispose();
+            item.mesh.material.dispose();
+            this.floatingTexts.splice(index, 1);
+        }
     }
 
     update(delta) {
@@ -108,22 +149,25 @@ export class Text3DSystem {
                 item.mesh.scale.setScalar(item.scaleMax);
             }
 
-            // 2. Physics / Float
-            item.mesh.position.add(item.velocity.clone().multiplyScalar(delta));
-            // Slow down vertical velocity (drag)
-            item.velocity.y *= 0.98;
-            // Add slight drift
-            item.velocity.x += (Math.sin(item.age + item.wobblePhase) * 0.5) * delta;
+            if (item.isSticky) {
+                // Stick to wall behavior (slight hover)
+                item.mesh.rotation.x = Math.sin(item.age + item.wobblePhase) * 0.1;
+                 item.mesh.rotation.y = Math.sin(item.age * 0.5) * 0.1;
+            } else {
+                // 2. Physics / Float
+                item.mesh.position.add(item.velocity.clone().multiplyScalar(delta));
+                // Slow down vertical velocity (drag)
+                item.velocity.y *= 0.98;
+                // Add slight drift
+                item.velocity.x += (Math.sin(item.age + item.wobblePhase) * 0.5) * delta;
 
-            // 3. Wobble Rotation
-            item.mesh.rotation.y = Math.sin(item.age * 2 + item.wobblePhase) * 0.2;
-            item.mesh.rotation.z = Math.cos(item.age * 1.5 + item.wobblePhase) * 0.1;
+                // 3. Wobble Rotation
+                item.mesh.rotation.y = Math.sin(item.age * 2 + item.wobblePhase) * 0.2;
+                item.mesh.rotation.z = Math.cos(item.age * 1.5 + item.wobblePhase) * 0.1;
+            }
 
             if (item.life <= 0) {
-                this.scene.remove(item.mesh);
-                item.mesh.geometry.dispose();
-                item.mesh.material.dispose();
-                this.floatingTexts.splice(i, 1);
+                this.removeText(item);
             }
         }
     }

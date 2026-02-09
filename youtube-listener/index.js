@@ -10,7 +10,7 @@ class YouTubeListener extends EventEmitter {
     this.youtube = null;
     this.liveChatId = null;
     this.nextPageToken = null;
-    this.pollingInterval = 5000;
+    this.pollingInterval = 10000; // Increased initial default
     this.startTime = Date.now();
     this.timeoutId = null;
   }
@@ -92,7 +92,10 @@ class YouTubeListener extends EventEmitter {
           });
 
           this.nextPageToken = response.data.nextPageToken;
-          this.pollingInterval = response.data.pollingIntervalMillis || 5000;
+
+          // Ensure we respect the API's requested interval, but don't go below 5s to be safe
+          const apiInterval = response.data.pollingIntervalMillis || 10000;
+          this.pollingInterval = Math.max(apiInterval, 10000);
 
           const messages = response.data.items;
           messages.forEach(msg => {
@@ -128,8 +131,11 @@ class YouTubeListener extends EventEmitter {
 
       } catch (error) {
           console.error('YouTube Listener: Error polling chat:', error.message);
+          // Increase backoff on error
+          this.pollingInterval = Math.min(this.pollingInterval * 2, 60000);
       }
 
+      console.log(`YouTube Listener: Polling again in ${this.pollingInterval}ms`);
       this.timeoutId = setTimeout(() => this.pollChat(), this.pollingInterval);
   }
 
