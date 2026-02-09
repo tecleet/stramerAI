@@ -149,7 +149,6 @@ youtubeListener.on('subscription', async (data) => {
   };
 
   const commands = eventEngine.processAIResponse(aiResponse, data.subscriber, "SUBSCRIBED!");
-
   commands.forEach(cmd => {
       broadcast({ type: 'ai-command', command: cmd });
   });

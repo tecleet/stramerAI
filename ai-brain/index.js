@@ -19,6 +19,7 @@ class AIBrain {
     - "text": what you say (keep it short, under 2 sentences, varied phrasing).
     - "emotion": one of ["happy", "angry", "surprised", "bored", "confused", "excited"].
     - "action": a physical action like ["wave", "jump", "dance", "attack", "eat"].
+    `;
 
     `;
 
@@ -31,6 +32,10 @@ class AIBrain {
     } else {
       console.log("AI Brain: No OpenAI API Key found.");
     }
+  }
+
+  getFallbackResponse() {
+      return this.mockResponses[Math.floor(Math.random() * this.mockResponses.length)];
   }
 
   async processChat(author, message, history = "") {
