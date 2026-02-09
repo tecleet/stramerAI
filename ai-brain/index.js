@@ -21,15 +21,7 @@ class AIBrain {
     - "action": a physical action like ["wave", "jump", "dance", "attack", "eat"].
     `;
 
-    this.mockResponses = [
-        { text: "Wow! That's interesting!", emotion: "happy", action: "wave" },
-        { text: "I'm hungry... for content!", emotion: "excited", action: "eat" },
-        { text: "Is that true?", emotion: "surprised", action: "jump" },
-        { text: "Thanks for the message!", emotion: "happy", action: "dance" },
-        { text: "Who said that?", emotion: "confused", action: "wave" },
-        { text: "Mmm... tasty text.", emotion: "happy", action: "eat" },
-        { text: "Let me eat that message!", emotion: "excited", action: "eat" }
-    ];
+    `;
 
     // Initialize OpenAI if key is present
     if (process.env.OPENAI_API_KEY) {
@@ -74,11 +66,11 @@ class AIBrain {
         }
       } catch (error) {
         console.error("OpenAI Error:", error);
-        return this.getFallbackResponse();
+        return null;
       }
     } else {
-      console.log("AI Brain: OpenAI not initialized. Using Mock Response.");
-      return this.getFallbackResponse();
+      console.log("AI Brain: OpenAI not initialized.");
+      return null;
     }
   }
 }

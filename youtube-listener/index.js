@@ -10,7 +10,7 @@ class YouTubeListener extends EventEmitter {
     this.youtube = null;
     this.liveChatId = null;
     this.nextPageToken = null;
-    this.pollingInterval = 10000; // Increased initial default to avoid "sent too soon"
+    this.pollingInterval = 10000; // Increased initial default
     this.startTime = Date.now();
     this.timeoutId = null;
   }
@@ -93,14 +93,13 @@ class YouTubeListener extends EventEmitter {
 
           this.nextPageToken = response.data.nextPageToken;
 
-          // Ensure we respect the API's requested interval, but enforce 10s minimum
+          // Ensure we respect the API's requested interval, but don't go below 5s to be safe
           const apiInterval = response.data.pollingIntervalMillis || 10000;
           this.pollingInterval = Math.max(apiInterval, 10000);
 
           const messages = response.data.items;
           messages.forEach(msg => {
               const publishedAt = new Date(msg.snippet.publishedAt).getTime();
-              // Only process messages that arrived after we connected
               if (publishedAt < this.startTime) return;
 
               const author = msg.authorDetails.displayName;
@@ -132,11 +131,11 @@ class YouTubeListener extends EventEmitter {
 
       } catch (error) {
           console.error('YouTube Listener: Error polling chat:', error.message);
-          // Exponential backoff on error, max 60s
+          // Increase backoff on error
           this.pollingInterval = Math.min(this.pollingInterval * 2, 60000);
       }
 
-      // console.log(`YouTube Listener: Polling again in ${this.pollingInterval}ms`);
+      console.log(`YouTube Listener: Polling again in ${this.pollingInterval}ms`);
       this.timeoutId = setTimeout(() => this.pollChat(), this.pollingInterval);
   }
 
@@ -159,7 +158,7 @@ class YouTubeListener extends EventEmitter {
               timestamp: new Date().toISOString()
           });
       } else { // 90% chance of chat
-          const messages = ["Hello!", "Cool stream!", "Is this AI?", "Make it dance!", "Wow!", "Nice graphics", "Can you eat this text?"];
+          const messages = ["Hello!", "Cool stream!", "Is this AI?", "Make it dance!", "Wow!", "Nice graphics"];
           const msg = messages[Math.floor(Math.random() * messages.length)];
            this.emit('chat', {
               author: `User_${Math.floor(Math.random() * 100)}`,
@@ -168,7 +167,7 @@ class YouTubeListener extends EventEmitter {
           });
       }
 
-      // Random interval between 2s and 10s for mock mode
+      // Random interval between 2s and 10s
       const interval = Math.floor(Math.random() * 8000) + 2000;
       this.timeoutId = setTimeout(() => this.pollMock(), interval);
   }
