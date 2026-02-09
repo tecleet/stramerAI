@@ -19,7 +19,6 @@ class AIBrain {
     - "text": what you say (keep it short, under 2 sentences, varied phrasing).
     - "emotion": one of ["happy", "angry", "surprised", "bored", "confused", "excited"].
     - "action": a physical action like ["wave", "jump", "dance", "attack", "eat"].
-
     `;
 
     this.mockResponses = [
@@ -28,7 +27,8 @@ class AIBrain {
         { text: "Is that true?", emotion: "surprised", action: "jump" },
         { text: "Thanks for the message!", emotion: "happy", action: "dance" },
         { text: "Who said that?", emotion: "confused", action: "wave" },
-        { text: "Mmm... tasty text.", emotion: "happy", action: "eat" }
+        { text: "Mmm... tasty text.", emotion: "happy", action: "eat" },
+        { text: "Let me eat that message!", emotion: "excited", action: "eat" }
     ];
 
     // Initialize OpenAI if key is present

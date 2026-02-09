@@ -113,9 +113,7 @@ youtubeListener.on('chat', async (data) => {
   const aiResponse = await aiBrain.processChat(data.author, data.message, history);
   console.log('AI Response:', aiResponse);
 
-  // aiBrain.processChat now guarantees a response object (even if it's a fallback)
   const commands = eventEngine.processAIResponse(aiResponse, data.author, data.message);
-
   commands.forEach(cmd => {
       broadcast({ type: 'ai-command', command: cmd });
   });
@@ -136,7 +134,6 @@ youtubeListener.on('subscription', async (data) => {
   };
 
   const commands = eventEngine.processAIResponse(aiResponse, data.subscriber, "SUBSCRIBED!");
-
   commands.forEach(cmd => {
       broadcast({ type: 'ai-command', command: cmd });
   });
@@ -150,37 +147,23 @@ youtubeListener.on('superchat', async (data) => {
     idleSystem.reset();
     memorySystem.addMessage(data.author, `SUPER CHAT: ${data.message} (${data.amount})`);
 
-    try {
-        const history = memorySystem.getRecentContext();
-        const prompt = `[SUPER CHAT from ${data.author} for ${data.amount}]: ${data.message}`;
+    const history = memorySystem.getRecentContext();
+    const prompt = `[SUPER CHAT from ${data.author} for ${data.amount}]: ${data.message}`;
 
-        const generatedResponse = await aiBrain.processChat(data.author, prompt, history);
+    // aiBrain now guarantees a response object (or generic fallback)
+    const generatedResponse = await aiBrain.processChat(data.author, prompt, history);
 
-        if (generatedResponse) {
-            const commands = eventEngine.processAIResponse(generatedResponse, data.author, `SUPER CHAT: ${data.message}`);
-            commands.forEach(cmd => {
-                broadcast({ type: 'ai-command', command: cmd });
-            });
-        } else {
-            throw new Error("AI Brain returned null");
-        }
+    // Check if the response is generic fallback (mock) and we want to enforce superchat excitement?
+    // For now, let's trust the AI or the fallback.
+    // Ideally, we'd have a specific "SuperChatFallback" in AIBrain, but simplification is key here.
 
-    } catch (e) {
-        console.error("Error processing super chat AI:", e);
-        // Fallback
-        const aiResponse = {
-            text: `WOW! ${data.author}, thank you so much for the ${data.amount}! You are incredible!`,
-            emotion: 'excited',
-            action: 'jump'
-        };
-        const commands = eventEngine.processAIResponse(aiResponse, data.author, `SUPER CHAT: ${data.message}`);
-        commands.forEach(cmd => {
-            broadcast({ type: 'ai-command', command: cmd });
-        });
-    }
+    const commands = eventEngine.processAIResponse(generatedResponse, data.author, `SUPER CHAT: ${data.message}`);
+    commands.forEach(cmd => {
+        broadcast({ type: 'ai-command', command: cmd });
+    });
 
     broadcast({ type: 'superchat', data });
-  });
+});
 
 // Start server
 const PORT = process.env.PORT || 3000;
